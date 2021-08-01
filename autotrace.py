@@ -3,13 +3,13 @@ import re
 import csv
 import time
 
-#is_windows = os.name == 'nt'
+is_windows = os.name == 'nt'
 
-urls_to_sample = ['facebook.com','YouTube.com','google.com','twitter.com','wordpress.com','gmail.com','tripadvisor.com','yahoo.com','apple.com','glassdoor.com']
+urls_to_sample = ['facebook.com','youtube.com','google.com','twitter.com','wordpress.com','gmail.com','tripadvisor.com','yahoo.com','apple.com','glassdoor.com']
 
 def init_test(numSamples, urls):
-	#cmd = 'tracert /w 1000 /h 30' if is_windows else 'traceroute -w1 -m30'
-	cmd = 'traceroute -w1 -m30'
+	cmd = 'tracert /w 1000 /h 30' if is_windows else 'traceroute -w1 -m30'
+	#cmd = 'traceroute -w1 -m30'
 	for i in range(numSamples):
 		for url in urls:
 			t1 = time.time()
@@ -18,7 +18,7 @@ def init_test(numSamples, urls):
 			time_taken = t2 - t1
 			process_file(url, time_taken)
 
-			print(f'Sample {i + 1} completed, URL = {url}, seconds = {time_taken}')
+			print(f'Sample {i + 1}, URL = {url}, seconds = {time_taken}')
 
 
 def process_file(destination_url, time_taken):
@@ -29,55 +29,95 @@ def process_file(destination_url, time_taken):
 	num_hops = 0
 
 	avg_latency_list = []
+	latency_sum = 0
 	for line in lines:
 		if line.startswith('*'): continue
 
-		match = re.match(r'\s*([0-9]+|\s)\s+([^\s]+)\s+\(([^\s]+)\)(.+)', line)
+
+		if is_windows:
+			match = re.match(r'\s*([0-9]+|\s)\s+([^\s]+(?: ms)? +[^\s]+(?: ms)? +[^\s]+(?: ms)? +)\s+([^\s]+)(?:\s+\[([^\s]+)\])?', line)
+			group_hopnum = 1
+			group_latencies = 2
+			group_url = 3
+			group_ip = 4
+		else:
+			match = re.match(r'\s*([0-9]+|\s)\s+([^\s]+)\s+\(([^\s]+)\)(.+)', line)
+			group_hopnum = 1
+			group_url = 2
+			group_ip = 3
+			group_latencies = 4
 		if match is None: continue
 		
-		if match.group(1) == ' ': hop_number = 0
-		else: hop_number = int(match.group(1))
+		if match.group(group_hopnum) == ' ': hop_number = 0
+		else: hop_number = int(match.group(group_hopnum))
 
-		url = match.group(2)
-		ip = match.group(3)
-		everything_else = match.group(4).strip()
+		url = match.group(group_url)
+		ip = match.group(group_ip)
+		# Fill in any empty value
+		if ip is None and url is not None: ip = url
+		elif url is None and ip is not None: url = ip
+
+		everything_else = match.group(group_latencies).strip()
 		
 		if ip in ip_latencies_dictionary: continue # Only look at the first hop
 
-		latencies = re.match(r'([0-9\.]+) ms(?: +([0-9\.]+) ms)?(?: +([0-9\.]+) ms)?', everything_else)
+		#latencies = re.match(r'([0-9\.]+) ms(?: +([0-9\.]+) ms)?(?: +([0-9\.]+) ms)?', everything_else)
+		latencies = re.match(r'(?:([0-9\.]+ ms|\*)) *(?:([0-9\.]+ ms|\*))? *(?:([0-9\.]+ ms|\*))?', everything_else)
 		if match is None: continue # No latency given
 		avg_latency = 0
-		if latencies.group(3) is not None:
-			avg_latency = (float(latencies.group(1)) + float(latencies.group(2)) + float(latencies.group(3))) / 3
-		elif latencies.group(2) is not None:
-			avg_latency = (float(latencies.group(1)) + float(latencies.group(2))) / 2
-		elif latencies.group(1) is not None:
-			avg_latency = float(latencies.group(1))
+		if latencies.group(3) is not None and latencies.group(3) != '*':
+			l1 = latencies.group(1)
+			l2 = latencies.group(2)
+			l3 = latencies.group(3)
+			if l1.endswith(' ms'): l1 = l1[:-3]
+			if l2.endswith(' ms'): l2 = l2[:-3]
+			if l3.endswith(' ms'): l3 = l3[:-3]
+			avg_latency = (float(l1) + float(l2) + float(l3)) / 3
+		
+		elif latencies.group(2) is not None and latencies.group(2) != '*':
+			l1 = latencies.group(1)
+			l2 = latencies.group(2)
+			if l1.endswith(' ms'): l1 = l1[:-3]
+			if l2.endswith(' ms'): l2 = l2[:-3]
+			avg_latency = (float(l1) + float(l2)) / 2
+		
+		elif latencies.group(1) is not None and latencies.group(1) != '*':
+			l1 = latencies.group(1)
+			if l1.endswith(' ms'): l1 = l1[:-3]
+			avg_latency = float(l1)
+		
 		else: continue
 
 		ip_latencies_dictionary[ip] = avg_latency
-
-		avg_latency_list.append(f'{ip},{avg_latency}')
-
+		avg_latency_list.append(f'{url} ({ip}),{avg_latency}')
+		
+		latency_sum += avg_latency
 		num_hops = max(num_hops, hop_number)
 
-	log_sample(destination_url, num_hops, time_taken, avg_latency_list)
+	log_sample(destination_url, num_hops, latency_sum, time_taken, avg_latency_list)
 
 def log_header():
 	line = ''
 	line += 'Destination URL,'
 	line += 'Number of Hops,'
-	line += 'Time Taken (s),'
-	line += 'Averaged Latency (s),'
+	line += 'Latency Sum (s),'
+	line += 'Sample Time Duration (s),'
+
+	for i in range(1, 31):
+		line += f'Address {i},'
+		line += f'Latency (s),'
+		
 	output_file.write(line + '\n')
+	output_file.flush()
 
 
-def log_sample(destination_url, num_hops, time_taken, avg_latency_list):
+def log_sample(destination_url, num_hops, latency_sum, time_taken, avg_latency_list):
 	avg_latency_str = ','.join(avg_latency_list)
 
 	line = ''
 	line += str(destination_url) + ','
 	line += str(num_hops) + ','
+	line += str(latency_sum) + ','
 	line += str(time_taken) + ','
 	line += str(avg_latency_str) + ','
 	output_file.write(line + '\n')
