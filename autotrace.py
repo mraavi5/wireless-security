@@ -12,15 +12,21 @@ def init_test(numSamples, urls):
 	#cmd = 'traceroute -w1 -m30'
 	for i in range(numSamples):
 		for url in urls:
-			t1 = time.time()
-			os.system(f'{cmd} {url} > temp_traceroute_data.txt')
-			t2 = time.time()
-			time_taken = t2 - t1
-			process_file(url, time_taken)
+			success = False
+			while not success:
+				t1 = time.time()
+				os.system(f'{cmd} {url} > temp_traceroute_data.txt')
+				t2 = time.time()
+				time_taken = t2 - t1
+				success = process_file(url, time_taken)
+				if not success:
+					print(f'Sample {i + 1}, URL = {url}: AN ERROR OCCURED (waiting 10 seconds then retrying the sample)')
+					time.sleep(10)
 
 			print(f'Sample {i + 1}, URL = {url}, seconds = {time_taken}')
 
 
+# Return True for success, and False for failure (redo the sample)
 def process_file(destination_url, time_taken):
 	ip_latencies_dictionary = {}
 	file = open('temp_traceroute_data.txt', 'r')
@@ -94,14 +100,17 @@ def process_file(destination_url, time_taken):
 		latency_sum += avg_latency
 		num_hops = max(num_hops, hop_number)
 
+	if num_hops == 0: return False # Signal to the parent function that we want to redo this sample
+
 	log_sample(destination_url, num_hops, latency_sum, time_taken, avg_latency_list)
+	return True
 
 def log_header():
 	line = ''
 	line += 'Destination URL,'
-	line += 'Number of Hops,'
-	line += 'Latency Sum (s),'
 	line += 'Sample Time Duration (s),'
+	line += 'Latency Sum (s),'
+	line += 'Number of Hops,'
 
 	for i in range(1, 31):
 		line += f'Address {i},'
@@ -116,9 +125,9 @@ def log_sample(destination_url, num_hops, latency_sum, time_taken, avg_latency_l
 
 	line = ''
 	line += str(destination_url) + ','
-	line += str(num_hops) + ','
-	line += str(latency_sum) + ','
 	line += str(time_taken) + ','
+	line += str(latency_sum) + ','
+	line += str(num_hops) + ','
 	line += str(avg_latency_str) + ','
 	output_file.write(line + '\n')
 
