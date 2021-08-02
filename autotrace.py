@@ -39,7 +39,6 @@ def process_file(destination_url, time_taken):
 	num_hops = 0
 
 	avg_latency_list = []
-	latency_sum = 0
 	for line in lines:
 		if line.startswith('*'): continue
 
@@ -101,19 +100,17 @@ def process_file(destination_url, time_taken):
 		ip_latencies_dictionary[ip] = avg_latency
 		avg_latency_list.append(f'{url} ({ip}),{avg_latency}')
 		
-		latency_sum += avg_latency
 		num_hops = max(num_hops, hop_number)
 
 	if num_hops == 0: return False # Signal to the parent function that we want to redo this sample
 
-	log_sample(destination_url, num_hops, latency_sum, time_taken, avg_latency_list)
+	log_sample(destination_url, num_hops, time_taken, avg_latency_list)
 	return True
 
 def log_header():
 	line = ''
 	line += 'Destination URL,'
 	line += 'Sample Time Duration (s),'
-	line += 'Latency Sum (s),'
 	line += 'Number of Hops,'
 
 	for i in range(1, 31):
@@ -124,13 +121,12 @@ def log_header():
 	#output_file.flush()
 
 
-def log_sample(destination_url, num_hops, latency_sum, time_taken, avg_latency_list):
+def log_sample(destination_url, num_hops, time_taken, avg_latency_list):
 	avg_latency_str = ','.join(avg_latency_list)
 
 	line = ''
 	line += str(destination_url) + ','
 	line += str(time_taken) + ','
-	line += str(latency_sum) + ','
 	line += str(num_hops) + ','
 	line += str(avg_latency_str) + ','
 	output_file.write(line + '\n')
