@@ -121,7 +121,7 @@ def log_header():
 		line += f'Latency (s),'
 		
 	output_file.write(line + '\n')
-	output_file.flush()
+	#output_file.flush()
 
 
 def log_sample(destination_url, num_hops, latency_sum, time_taken, avg_latency_list):
