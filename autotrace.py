@@ -25,6 +25,10 @@ def init_test(numSamples, urls):
 
 			print(f'Sample {i + 1}, URL = {url}, seconds = {time_taken}')
 
+def _match_has_number(match):
+	if match is None: return False
+	if match.strip() == '*': return False
+	return True
 
 # Return True for success, and False for failure (redo the sample)
 def process_file(destination_url, time_taken):
@@ -67,32 +71,32 @@ def process_file(destination_url, time_taken):
 		
 		if ip in ip_latencies_dictionary: continue # Only look at the first hop
 
-		#latencies = re.match(r'([0-9\.]+) ms(?: +([0-9\.]+) ms)?(?: +([0-9\.]+) ms)?', everything_else)
 		latencies = re.match(r'(?:([0-9\.]+ ms|\*)) *(?:([0-9\.]+ ms|\*))? *(?:([0-9\.]+ ms|\*))?', everything_else)
 		if match is None: continue # No latency given
 		avg_latency = 0
-		if latencies.group(3) is not None and latencies.group(3) != '*':
-			l1 = latencies.group(1)
-			l2 = latencies.group(2)
-			l3 = latencies.group(3)
-			if l1.endswith(' ms'): l1 = l1[:-3]
-			if l2.endswith(' ms'): l2 = l2[:-3]
-			if l3.endswith(' ms'): l3 = l3[:-3]
-			avg_latency = (float(l1) + float(l2) + float(l3)) / 3
-		
-		elif latencies.group(2) is not None and latencies.group(2) != '*':
-			l1 = latencies.group(1)
-			l2 = latencies.group(2)
-			if l1.endswith(' ms'): l1 = l1[:-3]
-			if l2.endswith(' ms'): l2 = l2[:-3]
-			avg_latency = (float(l1) + float(l2)) / 2
-		
-		elif latencies.group(1) is not None and latencies.group(1) != '*':
-			l1 = latencies.group(1)
-			if l1.endswith(' ms'): l1 = l1[:-3]
-			avg_latency = float(l1)
-		
-		else: continue
+		avg_latency_sum = 0
+		avg_latency_count = 0
+
+		num = latencies.group(1)
+		if _match_has_number(num):
+			if num.endswith(' ms'): num = num[:-3]
+			avg_latency_sum += float(num)
+			avg_latency_count += 1
+
+		num = latencies.group(2)
+		if _match_has_number(num):
+			if num.endswith(' ms'): num = num[:-3]
+			avg_latency_sum += float(num)
+			avg_latency_count += 1
+
+		num = latencies.group(3)
+		if _match_has_number(num):
+			if num.endswith(' ms'): num = num[:-3]
+			avg_latency_sum += float(num)
+			avg_latency_count += 1
+
+		if avg_latency_count == 0: continue
+		avg_latency = avg_latency_sum / avg_latency_count
 
 		ip_latencies_dictionary[ip] = avg_latency
 		avg_latency_list.append(f'{url} ({ip}),{avg_latency}')
