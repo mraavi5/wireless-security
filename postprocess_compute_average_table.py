@@ -1,7 +1,7 @@
 import os
 import re
 import csv
-import time
+import sys
 
 
 # Given a regular expression, list the files that match it, and ask for user input
@@ -44,10 +44,11 @@ def selectFile(regex, subdirs = False):
 	return selection
 
 
-fileName = selectFile('.csv')
+fileName = selectFile('.*.csv')
+if fileName == '': sys.exit()
+
 print(f'YOU SET IT TO {fileName}')
-sys.exit()
-outputFile = open(f'averaged_{fileName}', 'w')
+outputFile = open(f'postprocessed_averaged_{fileName}', 'w')
 readerFile = open(fileName, 'r')
 reader = csv.reader(x.replace('\0', '') for x in readerFile)
 
