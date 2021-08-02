@@ -47,12 +47,16 @@ def selectFile(regex, subdirs = False):
 fileName = selectFile('.*.csv')
 if fileName == '': sys.exit()
 
-print(f'YOU SET IT TO {fileName}')
-outputFile = open(f'postprocessed_averaged_{fileName}', 'w')
 readerFile = open(fileName, 'r')
 reader = csv.reader(x.replace('\0', '') for x in readerFile)
 
 header = next(reader)
+if len(header) != 64:
+	print('ERROR: Invalid number of columns, should be 64')
+	sys.exit()
+
+
+outputFile = open(f'postprocessed_averaged_{fileName}', 'w')
 
 # Dictionary where each url has an array, the array values are as follows:
 # 0: Count for number of samples
@@ -77,6 +81,7 @@ for row in reader:
 
 line = ''
 line += 'URL,'
+line += 'Num Samples,'
 line += 'Avg Time Taken,'
 line += 'Avg Latency Sum,'
 line += 'Avg Num Hops,'
@@ -86,6 +91,7 @@ for destination_url in sumData:
 	print(f'Writing url "{destination_url}"')
 	line = ''
 	line += destination_url + ','
+	line += str(sumData[destination_url][0]) + ','
 	line += str(sumData[destination_url][1] / sumData[destination_url][0]) + ','
 	line += str(sumData[destination_url][2] / sumData[destination_url][0]) + ','
 	line += str(sumData[destination_url][3] / sumData[destination_url][0]) + ','
