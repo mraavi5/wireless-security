@@ -60,6 +60,8 @@ if len(header) != 64:
 outputFile = open(f'postprocessed_intersection_{fileName}', 'w')
 
 nodes_per_url = {}
+latencies_sum_per_address = {}
+latencies_count_per_address = {}
 
 for row in reader:
 	destination_url = row[0]
@@ -72,6 +74,12 @@ for row in reader:
 	while i + 1 < len(row):
 		# Append the node address
 		nodes.append(row[i])
+		if row[i] not in latencies_sum_per_address:
+			latencies_sum_per_address[row[i]] = float(row[i + 1])
+			latencies_count_per_address[row[i]] = 1
+		else:
+			latencies_sum_per_address[row[i]] += float(row[i + 1])
+			latencies_count_per_address[row[i]] += 1
 		i += 2
 
 	if destination_url not in nodes_per_url:
@@ -92,9 +100,11 @@ for url in nodes_per_url:
 
 line = ''
 line += 'URL,'
-line += 'Addresses in common,'
 for i in range(1, 31):
-	line += ','
+	line += f'Address {i} in common,'
+	line += f'Latency {i},'
+
+outputFile.write(line + '\n')
 
 for url in nodes_per_url:
 	nodes = nodes_per_url[url][0]
@@ -102,7 +112,9 @@ for url in nodes_per_url:
 	print(f'\nURL: {url} - INTERSECTION {nodes}')
 	line = ''
 	line += url + ','
-	line += ','.join(nodes)
+	for node in nodes:
+		line += node + ','
+		line += str(latencies_sum_per_address[node] / latencies_count_per_address[node]) + ','
 	outputFile.write(line + '\n')
 
 print('DONE.')
