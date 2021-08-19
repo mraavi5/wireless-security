@@ -5,10 +5,10 @@ import sys
 
 
 # Given a regular expression, list the files that match it, and ask for user input
-def selectFile(regex, subdirs = False):
+def selectFile(regex, subdirs = False, walkDir = '.'):
 	files = []
 	if subdirs:
-		for (dirpath, dirnames, filenames) in os.walk('.'):
+		for (dirpath, dirnames, filenames) in os.walk(walkDir):
 			for file in filenames:
 				path = os.path.join(dirpath, file)
 				if path[:2] == '.\\': path = path[2:]
@@ -44,8 +44,19 @@ def selectFile(regex, subdirs = False):
 	return selection
 
 
-fileName = selectFile('.*.csv')
+fileName = selectFile('.*.csv', True, '..')
 if fileName == '': sys.exit()
+
+# Extract the file path from the file name, since the walkDir is '..', not the current directory
+i = fileName.rfind('/') # Linux
+if i != -1:
+	fileNamePath = fileName[:i+1]
+	fileName = fileName[i+1:]
+i = fileName.rfind('\\') # Windows
+if i != -1:
+	fileNamePath = fileName[:i+1]
+	fileName = fileName[i+1:]
+
 
 readerFile = open(fileName, 'r')
 reader = csv.reader(x.replace('\0', '') for x in readerFile)
