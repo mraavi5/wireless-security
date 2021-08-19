@@ -4,7 +4,7 @@ marker_size = 15;
 line_width = 2;
 font_size = 18;
 
-plotnum = 2
+plotnum = 1
 
 data = readmatrix('postprocessed_before_core_network_att-5g-100samples.csv', 'Delimiter', ',', 'LineEnding', '\n');
 
@@ -15,13 +15,16 @@ if plotnum == 1
     y = data(:, 3)
     c = cdfplot(y);
     title('');
-    xlabel('Base station latency (ms)')
-else
-    y = data(:, 4)
-    c = cdfplot(y);
+    xlabel('Latency of Core Network (ms)')
+elseif plotnum == 2
+    %piedata = [247/1000 753/1000];
+    piedata = [247, 753];
+    c = pie(piedata, '%.1f%%')
     title('');
-    xlabel('Hops to base station')
+    xlabel('Hops to Core Network')
+    legend('4 hops', '5 hops')
 end
+ylabel('CDF')
 grid on;
 axis square;
 
