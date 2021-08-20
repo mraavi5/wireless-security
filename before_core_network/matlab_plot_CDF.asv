@@ -61,22 +61,22 @@ elseif plotnum == 4
     %fitdist(y_h, 'Normal');
     
     %legend('Cellular', 'University Wifi', 'Home Wifi', 'FontSize', 10);
-    legend('Cellular', 'UCCS Wifi', 'Home Wifi', 'FontSize', 12, 'Location', legend_pos);
+    legend('Cellular', 'UCCS Wifi', 'Home Wifi', 'FontSize', 10, legend_pos);
     %columnlegend(3, 'Cellular', 'University Wifi', 'Home Wifi');
     hold off;
     title('');
     xlabel('Core Network Latency (ms)')
     
     
-    set(c, 'LineStyle', '-', 'Color', '#4B288F');
+    set(c, 'LineStyle', '-', 'Color', '#F54FA1');
     set(c2,'LineWidth', line_width);
-    set(c2, 'LineStyle', '-', 'Color', '#F54FA1');
+    set(c2, 'LineStyle', '-', 'Color', '#4AF896');
     set(c3,'LineWidth', line_width);
-    set(c3, 'LineStyle', '-', 'Color', '#4AF896');
+    set(c3, 'LineStyle', '-', 'Color', '#4B288F');
 elseif plotnum == 5
     bar([4.5, 5, 5])
 end
-ylabel('CDF')
+ylabel('PDF')
 grid on;
 axis square;
 

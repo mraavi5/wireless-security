@@ -57,7 +57,30 @@ i = fileName.rfind('\\') # Windows
 if i != -1:
 	fileNamePath = fileName[:i+1]
 	fileName = fileName[i+1:]
+print(f'Selected "{fileName}"')
+print()
+print('1:\tAT&T (core network: 12.x)')
+print('2:\tUCCS (core network: 192/206.X)')
+print('3:\tQwest (core network: 4/72/152.X)')
+print()
+service_provider = int(input('What service provider? (1-3): '))
 
+if service_provider == 1:
+	core_address_prefix = ['12']
+elif service_provider == 2:
+	core_address_prefix = ['192', '206']
+elif service_provider == 3:
+	core_address_prefix = ['4', '72', '152']
+else:
+	print('Service provider not found.')
+	sys.exit()
+
+core_address_prefix_str = '/'.join(core_address_prefix)
+
+def is_core(ip):
+	for prefix in core_address_prefix:
+		if ip.startswith(prefix + '.'): return True
+	return False
 
 readerFile = open(fileNamePath + fileName, 'r')
 reader = csv.reader(x.replace('\0', '') for x in readerFile)
@@ -91,10 +114,10 @@ histogram = dict(sorted(histogram.items(), key = lambda item: item[1], reverse =
 
 line = ''
 line += 'Destination,'
-line += 'First 12.X Address,'
-line += 'First 12.X Latency,'
-line += '# Hops Up To 12.X,'
-line += 'Latencies Up To 12.X,'
+line += f'First {core_address_prefix_str}.X Address,'
+line += f'First {core_address_prefix_str}.X Latency,'
+line += f'# Hops Up To {core_address_prefix_str}.X,'
+line += f'Latencies Up To {core_address_prefix_str}.X,'
 line += ' [ DIVIDER ] ,'
 for i in range(1, 31):
 	line += f'Hop {i} Address,'
@@ -108,7 +131,11 @@ readerFile.seek(0)
 reader = csv.reader(x.replace('\0', '') for x in readerFile)
 header = next(reader)
 
+row_count = 1
+
 for row in reader:
+	row_count += 1
+
 	destination_url = row[0]
 	time_taken = float(row[1])
 	num_hops = float(row[2])
@@ -122,7 +149,7 @@ for row in reader:
 	i = 3
 	while i + 1 < len(row):
 		address = row[i]
-		latency = row[i + 1]
+		latency = row[i + 1] or '0'
 
 		j = address.rfind('(')
 		address_before = address[:j].strip()
@@ -133,7 +160,7 @@ for row in reader:
 		other_hop_data += str(histogram[address]) + ','
 		other_hop_data += latency + ','
 
-		if address_after.startswith('12.'):
+		if is_core(address_after):
 			first_12x_address = address
 			first_12x_latency = latency
 			break
@@ -141,11 +168,12 @@ for row in reader:
 			latencies_up_to_first_12x += float(latency)
 		i += 2
 
-
+	if first_12x_address is None:
+		print(f'ERROR: Row {row_count} ({destination_url}): No core network that starts with {core_address_prefix_str}.X')
 	line = ''
 	line += destination_url + ','
-	line += first_12x_address + ','
-	line += first_12x_latency + ','
+	line += str(first_12x_address) + ','
+	line += str(first_12x_latency) + ','
 	line += str(num_hops_to_first_12x) + ','
 	line += str(latencies_up_to_first_12x) + ','
 	line += '|,'
