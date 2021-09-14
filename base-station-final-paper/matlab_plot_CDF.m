@@ -1,16 +1,27 @@
-global show_windows marker_size line_width font_size;
+global show_windows marker_size line_width line_width_dotted font_size font_size_legend;
 show_windows = 'on';
 marker_size = 15;
-line_width = 2;
-font_size = 18;
+line_width = 5;
+line_width_dotted = 3;
+font_size = 24;
+font_size_legend = 19;
 legend_pos = 'SouthEast';
 
 plotnum = 4
+base_station_core = 2
 
-data_cellular = readmatrix('postprocessed_before_core_network_att-5g-100samples.csv', 'Delimiter', ',', 'LineEnding', '\n');
-data_univ_wifi = readmatrix('postprocessed_before_core_network_uccs-tracert-10samples.csv', 'Delimiter', ',', 'LineEnding', '\n');
-data_home_wifi = readmatrix('postprocessed_before_core_network_apt-tracert-100samples.csv', 'Delimiter', ',', 'LineEnding', '\n');
+if base_station_core == 1
+    data_cellular = readmatrix('postprocessed_before_base_station_att-5g-100samples.csv', 'Delimiter', ',', 'LineEnding', '\n');
+    data_univ_wifi = readmatrix('postprocessed_before_base_station_uccs-tracert-10samples.csv', 'Delimiter', ',', 'LineEnding', '\n');
+    data_home_wifi = readmatrix('postprocessed_before_base_station_apt-tracert-100samples.csv', 'Delimiter', ',', 'LineEnding', '\n');
+else
+    data_cellular = readmatrix('postprocessed_before_core_network_att-5g-100samples.csv', 'Delimiter', ',', 'LineEnding', '\n');
+    data_univ_wifi = readmatrix('postprocessed_before_core_network_uccs-tracert-10samples.csv', 'Delimiter', ',', 'LineEnding', '\n');
+    data_home_wifi = readmatrix('postprocessed_before_core_network_apt-tracert-100samples.csv', 'Delimiter', ',', 'LineEnding', '\n');
+end
+
 fig = figure();
+fig.Position = [100 100 580+100 580+100]
 
 
 if plotnum == 1
@@ -60,23 +71,26 @@ elseif plotnum == 4
     %fitdist(y_u, 'Normal');
     %fitdist(y_h, 'Normal');
     
-    %legend('Cellular', 'University Wifi', 'Home Wifi', 'FontSize', 10);
-    legend('Cellular', 'UCCS Wifi', 'Home Wifi', 'FontSize', 10, legend_pos);
+    legend('Cellular', 'Wi-Fi University', 'Wi-Fi Home', 'FontSize', font_size_legend, 'Location', legend_pos);
+    %legend(sprintf('AT&T'), sprintf('FRGP'), sprintf('Qwest'), 'FontSize', font_size, 'Location', legend_pos);
     %columnlegend(3, 'Cellular', 'University Wifi', 'Home Wifi');
     hold off;
     title('');
-    xlabel('Core Network Latency (ms)')
+    if base_station_core == 1
+        xlabel('Base Station Latency (ms)')
+    else
+        xlabel('Core Network Latency (ms)')
+    end
     
-    
-    set(c, 'LineStyle', '-', 'Color', '#F54FA1');
+    set(c, 'LineStyle', '-', 'Color', '#4B288F');
     set(c2,'LineWidth', line_width);
-    set(c2, 'LineStyle', '-', 'Color', '#4AF896');
+    set(c2, 'LineStyle', '-', 'Color', '#F54FA1');
     set(c3,'LineWidth', line_width);
-    set(c3, 'LineStyle', '-', 'Color', '#4B288F');
+    set(c3, 'LineStyle', '-', 'Color', '#4AF896');
 elseif plotnum == 5
     bar([4.5, 5, 5])
 end
-ylabel('PDF')
+ylabel('CDF')
 grid on;
 axis square;
 
@@ -104,23 +118,23 @@ else
     y_vals = get(c,'Ydata');
     [d,ix] = min(abs(x_vals-avg_c));
     color = get(c, 'Color');
-    xline(avg_c, 'LineWidth', line_width, 'LineStyle', '--', 'color', color, 'HandleVisibility','off');
+    xline(avg_c, 'LineWidth', line_width_dotted, 'LineStyle', '--', 'color', color, 'HandleVisibility','off');
     
     x_vals = get(c2,'Xdata');
     y_vals = get(c2,'Ydata');
     [d,ix] = min(abs(x_vals-avg_u));
     color = get(c2, 'Color');
-    xline(avg_u, 'LineWidth', line_width, 'LineStyle', '--', 'color', color, 'HandleVisibility','off');
+    xline(avg_u, 'LineWidth', line_width_dotted, 'LineStyle', '--', 'color', color, 'HandleVisibility','off');
     
     x_vals = get(c3,'Xdata');
     y_vals = get(c3,'Ydata');
     [d,ix] = min(abs(x_vals-avg_h));
     color = get(c3, 'Color');
-    xline(avg_h, 'LineWidth', line_width, 'LineStyle', '--', 'color', color, 'HandleVisibility','off');
+    xline(avg_h, 'LineWidth', line_width_dotted, 'LineStyle', '--', 'color', color, 'HandleVisibility','off');
     
-    set(gca, 'XScale', 'log', 'XGrid', 'on', 'XMinorGrid', 'on');
+    set(gca, 'XScale', 'log', 'XGrid', 'on', 'XMinorGrid', 'off');
 %    set(gca, 'YScale', 'log', 'YGrid', 'on', 'YMinorGrid', 'on');
-    xticks([0, 0.01, 0.1, 1, 10, 100]);
+    xticks([5, 10, 20, 40, 80, 160, 320, 640, 1280]);
     set(gca,'XTickLabel',num2str(get(gca,'XTick').'));
-    xlim([5, max([max(y_c), max(y_u), max(y_h) + 500])])
+    xlim([3.6, max([max(y_c), max(y_u), max(y_h) + 1000])])
 end
